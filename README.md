@@ -31,7 +31,7 @@ A full-featured Event Management System built with Next.js 14, allowing users to
 
 ## 🏗️ Architecture Overview
 
-```
+```mermaid
 graph TD
     A[Client - Next.js Frontend] --> B[Server Actions]
     B --> C[(MongoDB Database)]
@@ -102,7 +102,7 @@ EVENT-MANAGEMENT-SYSTEM/
 
 ## 🔄 Data Flow Diagram
 
-```
+```mermaid
 sequenceDiagram
     participant U as User
     participant FE as Frontend
