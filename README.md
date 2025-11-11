@@ -137,7 +137,7 @@ sequenceDiagram
 
 ## 🔐 Authentication Flow
 
-```
+```mermaid
 flowchart LR
     A[User Visits Site] --> B{Authenticated?}
     B -->|No| C[Redirect to Sign In]
@@ -151,7 +151,7 @@ flowchart LR
 
 ## 💳 Payment Processing Flow
 
-```
+```mermaid
 flowchart LR
     A[User Clicks Buy Ticket] --> B[CheckoutButton Component]
     B --> C{User Signed In?}
@@ -313,7 +313,7 @@ When a user purchases a ticket, the system creates a Stripe checkout session. On
 
 #### Flowchart: Stripe Payment Webhook
 
-```
+```mermaid
 sequenceDiagram
     participant U as User
     participant FE as Frontend
@@ -359,7 +359,7 @@ Clerk webhooks synchronize user data between Clerk's authentication system and o
 
 #### Flowchart: Clerk Authentication Webhook
 
-```
+```mermaid
 graph TD
     A[User Action] --> B[Clerk Dashboard]
     B --> C{Event Type}
