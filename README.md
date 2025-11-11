@@ -25,7 +25,7 @@ A full-featured Event Management System built with Next.js 14, allowing users to
 
 <div align="center">
   <img src="/public/assets/images/hero.png" alt="Hero Section" width="45%" />
-  <img src="/public/assets/images/dashboard.png" alt="Dashboard" width="45%" />
+
   <p><em>Event Management Dashboard</em></p>
 </div>
 
