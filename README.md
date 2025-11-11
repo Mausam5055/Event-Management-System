@@ -31,7 +31,7 @@ A full-featured Event Management System built with Next.js 14, allowing users to
 
 ## 🏗️ Architecture Overview
 
-```mermaid
+```
 graph TD
     A[Client - Next.js Frontend] --> B[Server Actions]
     B --> C[(MongoDB Database)]
@@ -82,7 +82,7 @@ graph TD
 
 ## 📁 Project Structure
 
-```bash
+```
 EVENT-MANAGEMENT-SYSTEM/
 ├── app/                     # Next.js 14 app directory
 │   ├── (auth)/             # Authentication routes
@@ -102,7 +102,7 @@ EVENT-MANAGEMENT-SYSTEM/
 
 ## 🔄 Data Flow Diagram
 
-```mermaid
+```
 sequenceDiagram
     participant U as User
     participant FE as Frontend
@@ -137,7 +137,7 @@ sequenceDiagram
 
 ## 🔐 Authentication Flow
 
-```mermaid
+```
 flowchart LR
     A[User Visits Site] --> B{Authenticated?}
     B -->|No| C[Redirect to Sign In]
@@ -151,7 +151,7 @@ flowchart LR
 
 ## 💳 Payment Processing Flow
 
-```mermaid
+```
 flowchart LR
     A[User Clicks Buy Ticket] --> B[CheckoutButton Component]
     B --> C{User Signed In?}
@@ -178,7 +178,7 @@ flowchart LR
 ### Environment Variables
 Create a `.env` file with the following variables:
 
-```env
+```
 # NEXT.JS
 NEXT_PUBLIC_SERVER_URL=http://localhost:3000
 
@@ -246,7 +246,7 @@ npm run dev
 ### Data Models
 
 #### Event Model
-```typescript
+```
 interface IEvent {
   _id: string;
   title: string;
@@ -265,7 +265,7 @@ interface IEvent {
 ```
 
 #### User Model
-```typescript
+```
 interface IUser {
   _id: string;
   clerkId: string;
@@ -302,6 +302,107 @@ interface IUser {
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+## 🌐 Webhook System Explanation
+
+The Event Management System uses webhooks to synchronize data between external services (Stripe, Clerk) and the MongoDB database. This ensures real-time updates without polling.
+
+### Stripe Webhook Integration
+
+When a user purchases a ticket, the system creates a Stripe checkout session. Once the payment is completed, Stripe sends a webhook to our application to confirm the transaction and store the order details.
+
+#### Flowchart: Stripe Payment Webhook
+
+```
+sequenceDiagram
+    participant U as User
+    participant FE as Frontend
+    participant SA as Server Action
+    participant S as Stripe
+    participant WH as Webhook Endpoint
+    participant DB as MongoDB
+    
+    U->>FE: Click "Buy Ticket"
+    FE->>SA: checkoutOrder(eventData)
+    SA->>S: Create Checkout Session
+    S-->>SA: Session URL
+    SA-->>FE: Redirect to Stripe
+    FE->>S: Complete Payment
+    S->>WH: POST /webhook/stripe (checkout.session.completed)
+    WH->>WH: Verify webhook signature
+    WH->>DB: createOrder(orderData)
+    DB-->>WH: Order saved
+    WH-->>S: HTTP 200 OK
+```
+
+#### Key Components:
+
+1. **Checkout Process**: 
+   - User initiates ticket purchase through [CheckoutButton.tsx](components/shared/CheckoutButton.tsx)
+   - [checkoutOrder](lib/actions/order.actions.ts) creates a Stripe session with metadata
+   - User completes payment on Stripe checkout page
+
+2. **Webhook Handling**:
+   - Stripe sends `checkout.session.completed` event to `/api/webhook/stripe/route.ts`
+   - Webhook verifies the signature using `STRIPE_WEBHOOK_SECRET`
+   - Extracts order data from event metadata
+   - Calls [createOrder](lib/actions/order.actions.ts) to store in MongoDB
+
+3. **Data Storage**:
+   - Order information stored in [Order collection](lib/database/models/order.model.ts)
+   - References to Event and User documents maintained via ObjectId
+   - Stripe ID stored for reconciliation purposes
+
+### Clerk Webhook Integration
+
+Clerk webhooks synchronize user data between Clerk's authentication system and our MongoDB database, ensuring consistency across platforms.
+
+#### Flowchart: Clerk Authentication Webhook
+
+```
+graph TD
+    A[User Action] --> B[Clerk Dashboard]
+    B --> C{Event Type}
+    C -->|user.created| D[Create User in MongoDB]
+    C -->|user.updated| E[Update User in MongoDB]
+    C -->|user.deleted| F[Delete User from MongoDB]
+    D --> G[Update Clerk Metadata]
+    G --> H[Add MongoDB userId to Clerk]
+```
+
+#### Key Components:
+
+1. **User Synchronization**:
+   - When a user signs up, Clerk sends `user.created` event to `/api/webhook/clerk/route.ts`
+   - Webhook creates a corresponding user document in [User collection](lib/database/models/user.model.ts)
+   - MongoDB `_id` is added to Clerk's public metadata for client-side access
+
+2. **Profile Updates**:
+   - When user updates profile, Clerk sends `user.updated` event
+   - Webhook synchronizes changes to MongoDB user document
+
+3. **Account Deletion**:
+   - When user deletes account, Clerk sends `user.deleted` event
+   - Webhook removes user from MongoDB and cleans up related data
+
+### Webhook Security
+
+Both webhook implementations include security measures:
+
+1. **Stripe Webhooks**:
+   - Signature verification using `stripe.webhooks.constructEvent`
+   - Requires `STRIPE_WEBHOOK_SECRET` environment variable
+
+2. **Clerk Webhooks**:
+   - Signature verification using Svix library
+   - Requires `WEBHOOK_SECRET` environment variable
+
+### Webhook Endpoint URLs
+
+- Stripe Webhook: `POST /api/webhook/stripe`
+- Clerk Webhook: `POST /api/webhook/clerk`
+
+These endpoints must be publicly accessible URLs for the services to send events. During local development, tools like ngrok can be used to expose localhost endpoints.
 
 ## 📄 License
 
